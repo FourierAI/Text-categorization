@@ -17,6 +17,6 @@ if __name__ == '__main__':
                 if int(segments[1]) >=5:
                     high_frequency_words.add(segments[0])
 
-    with open('../data/inverted_index/high_frequency_words','a') as file:
+    with open('../data/inverted_index/high_doc_frequency_words','a') as file:
         for word in high_frequency_words:
             file.write(word+'\n')

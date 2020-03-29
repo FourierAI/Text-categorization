@@ -10,6 +10,7 @@ import os
 import word as wd
 import json
 import math
+import traceback
 
 if __name__ == "__main__":
 
@@ -32,7 +33,7 @@ if __name__ == "__main__":
             word_list.append(word)
 
     # entropy of category
-    data_path = '../data/raw/20news-bydate-train/'
+    data_path = '../data/stemming/20news-bydate-train/'
     category_dir_list = os.listdir(data_path)
     total_category_frequency = {}
     total_file_count = 0
@@ -42,41 +43,46 @@ if __name__ == "__main__":
         total_file_count += file_count
 
 
-    # compute HC entropy
+    # compute H(C) entropy
     HC_entropy = 0
-    pc = {}
+    pc_dict = {}
     for category_dir in total_category_frequency:
         possibility = total_category_frequency[category_dir]/total_file_count
-        pc[category_dir] = possibility
+        pc_dict[category_dir] = possibility
         HC_entropy += possibility*math.log(1/possibility)
 
-    # compute HC_W
+    # compute H(C|W)
     for word in word_list:
         # pw
-        word_possibility = word.count/total_words_count
+        pw = word.count / total_file_count
 
         # pw_
-        word_possibility_bar = 1 - word_possibility
+        pw_bar = 1 - pw
 
         # sum p(c|w)log(1/p(c|w))
-        summation_pw = 0
-        summation_pw_bar = 0
+        sum_pc_w = 0
+        sum_pc_w_bar = 0
         for category in word.category_frequency:
-            ct_possibility = pc.get(category)
+            pc = pc_dict.get(category)
 
-            wd_ct_frequency = word.category_frequency[category]
-            wd_ct_possibility = wd_ct_frequency/word.count
+            ct_count_while_w = word.category_frequency[category]
+            pc_w = ct_count_while_w / word.count
 
-            summation_pw += wd_ct_possibility*math.log(1/wd_ct_possibility)
+            sum_pc_w += pc_w * math.log(1 / pc_w)
 
             # p(c) = p(w~)p(c|w~) + p(w)p(c|w)
             # p(c|w~) = [p(c) - p(w)p(c|w)]/p(w~)
+            try:
+                pc_w_bar = (pc - pw * pc_w) / pw_bar
+                if pc_w_bar > 0:
+                    sum_pc_w_bar += pc_w_bar * math.log(1 / pc_w_bar)
+            except:
+                traceback.print_exc()
+                print('key:{},pc:{},pw:{},pc_w:{},pw_bar:{},pc_w_bar:{}'.format(word.word_key,pc,pw,pc_w,pw_bar,pc_w_bar))
 
-            wd_ct_complement_possibility = (ct_possibility - word_possibility*wd_ct_possibility)/word_possibility_bar
-            summation_pw_bar += wd_ct_complement_possibility*math.log(1/wd_ct_complement_possibility)
 
         # computer H(C|w)
-        HC_W_entropy = word_possibility*summation_pw+word_possibility_bar*summation_pw_bar
+        HC_W_entropy = pw * sum_pc_w + pw_bar * sum_pc_w_bar
 
         # I(w) information gain = H(c) - H(c|x)
         I_W_gain = HC_entropy - HC_W_entropy

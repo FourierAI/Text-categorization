@@ -9,9 +9,6 @@
 import os
 import numpy as np
 import pandas as pd
-pd.set_option('display.width',130)
-
-import math
 
 if __name__ == '__main__':
 
@@ -41,12 +38,15 @@ if __name__ == '__main__':
         fik = []
         for word in word_list:
             frequency = document_content.count(word)
+            # if frequency>0:
+            #     print('word:{},document_name:{},frequency{} '.format(word,document_name,frequency))
             fik.append(frequency)
         fik_document.append(fik)
 
     fik_document_np = np.array(fik_document)
     word_vec_frame = pd.DataFrame(fik_document_np, index=document_name_index,columns=word_list)
-    print('before td-idf:',word_vec_frame)
+
+    word_vec_frame.to_csv('../data/word2vec/td.csv')
 
     word_times = {}
 
@@ -59,10 +59,18 @@ if __name__ == '__main__':
 
     numberofdocument = len(document_dict)
 
-    for word, column_vec in word_vec_frame.iteritems():
+    row, column = word_vec_frame.shape
+    for i in range(column):
+        word = word_vec_frame.iloc[:,i].name
         numberoftimesword = word_times.get(word)
-        np.log(numberofdocument/numberoftimesword)
-        # todo multiply
-        column_vec.multiply(np.log(numberofdocument/numberoftimesword))
+        idf = np.log(numberofdocument / numberoftimesword)
+        word_vec_frame.iloc[:,i] = word_vec_frame.iloc[:,i]*idf
 
-    print('after td-idf:',word_vec_frame)
+    # normalize
+    normalization = word_vec_frame.apply(lambda x: (x ** 2).sum(), axis=1)
+    for i in range(row):
+        if normalization[i] != 0:
+            print('At {}th row, normailization:{}'.format(i, normalization[i]))
+            word_vec_frame.iloc[i,:] = word_vec_frame.iloc[i,:]/normalization[i]
+
+    word_vec_frame.to_csv('../data/word2vec/td-idf.csv')

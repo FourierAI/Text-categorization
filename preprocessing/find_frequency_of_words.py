@@ -24,7 +24,7 @@ if __name__ == '__main__':
     category_dir_list = os.listdir(stemming_train_path)
 
     word_set = set()
-    with open('../data/inverted_index/high_frequency_words') as file:
+    with open('../data/inverted_index/high_doc_frequency_words') as file:
         for line in file:
             word_set.add(line.strip())
     print('word set has been loaded')
